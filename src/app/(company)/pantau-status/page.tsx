@@ -267,7 +267,7 @@ export default function PantauStatusPage() {
                                       </div>
                                       <div className="space-y-0.5">
                                         <p className="text-[13px] font-bold text-slate-900 uppercase tracking-tight">{doc.name}</p>
-                                        <p className="text-xs font-medium text-slate-500">{doc.note}</p>
+                                        <p className="text-xs font-medium text-slate-500">{(doc as any).note || ""}</p>
                                       </div>
                                     </div>
                                     

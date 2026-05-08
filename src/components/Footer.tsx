@@ -19,7 +19,7 @@ export default function Footer() {
       y: 0,
       transition: {
         duration: 0.8,
-        ease: "easeOut",
+        ease: "easeOut" as any,
         staggerChildren: 0.15
       }
     }

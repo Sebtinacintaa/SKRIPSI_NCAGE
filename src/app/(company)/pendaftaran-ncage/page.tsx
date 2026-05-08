@@ -1,4 +1,4 @@
-import NcageRegistrationView from "@/src/features/pendaftaran/NcageRegistrationView";
+import NcageRegistrationView from "@/src/views/company/pendaftaran-ncage/NcageRegistrationView";
 
 const PendaftaranNcagePage = () => {
   return (

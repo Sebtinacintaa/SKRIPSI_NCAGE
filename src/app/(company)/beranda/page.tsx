@@ -1,4 +1,4 @@
-import BerandaView from "@/src/features/beranda/BerandaView";
+import BerandaView from "@/src/views/company/beranda/BerandaView";
 
 export const metadata = {
   title: "Beranda | NCAGE Indonesia",
