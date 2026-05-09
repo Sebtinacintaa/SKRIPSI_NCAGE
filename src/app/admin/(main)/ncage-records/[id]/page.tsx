@@ -117,6 +117,7 @@ async function getNcageRecordWithDetail(recordId: string) {
 
   const detail: PermohonanDetail = {
     id: data.id,
+    application_number: null,
     created_at: data.created_at ?? "",
     status_id: data.status_id ?? 1,
     status_name: status?.name ?? "Permohonan Dikirim",

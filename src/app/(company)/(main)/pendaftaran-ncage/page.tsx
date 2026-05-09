@@ -1,11 +1,9 @@
-import NcageRegistrationView from "@/src/features/pendaftaran/NcageRegistrationView";
+import NcageRegistrationView from "@/src/features/company/pendaftaran/NcageRegistrationView";
 
-const PendaftaranNcagePage = () => {
+export default function PendaftaranNcagePage() {
   return (
     <div className="min-h-screen bg-gray-50/50 py-5 px-4 sm:px-6 lg:px-8">
       <NcageRegistrationView />
     </div>
   );
-};
-
-export default PendaftaranNcagePage;
+}

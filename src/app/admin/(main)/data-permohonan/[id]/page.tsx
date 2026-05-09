@@ -112,6 +112,7 @@ async function getPermohonanDetail(
 
   return {
     id: data.id,
+    application_number: (data as Record<string, unknown>).application_number as string | null ?? null,
     created_at: data.created_at ?? "",
     status_id: data.status_id ?? 1,
     status_name: status?.name ?? "Permohonan Dikirim",

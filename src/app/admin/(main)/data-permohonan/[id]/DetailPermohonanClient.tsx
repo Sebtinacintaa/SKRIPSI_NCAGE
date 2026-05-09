@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { updateStatusPermohonan } from "./actions";
+import { updateStatusPermohonan } from "@/src/services/admin/permohonanService";
 import type { PermohonanDetail } from "@/src/types/permohonan";
 import { DOCUMENT_LABELS } from "@/src/types/permohonan";
 

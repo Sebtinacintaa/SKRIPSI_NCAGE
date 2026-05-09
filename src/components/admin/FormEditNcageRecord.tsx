@@ -12,7 +12,7 @@ import {
 import {
   updateNcageRecord,
   deleteNcageRecord,
-} from "@/src/app/admin/(main)/ncage-records/[id]/actions";
+} from "@/src/services/admin/ncageRecordService";
 
 interface FormEditNcageRecordProps {
   id: string;

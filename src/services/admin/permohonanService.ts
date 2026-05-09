@@ -214,6 +214,9 @@ export async function updateStatusPermohonan(
         }
       }
 
+      // Suppress unused variable warning
+      void company;
+      void identity;
     }
 
     await createNotification({

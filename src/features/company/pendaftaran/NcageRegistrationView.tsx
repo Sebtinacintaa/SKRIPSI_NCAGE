@@ -5,7 +5,8 @@ import Stepper, { StepItem } from "@/src/components/ui/Stepper";
 
 import { useRouter } from "next/navigation";
 import { createClient } from "@/src/utils/supabase/client";
-import { checkNcageExpiry, generateApplicationNumber } from "./actions";
+import { createAdminClient } from "@/src/utils/supabase/admin";
+import { checkNcageExpiry, generateApplicationNumber } from "@/src/services/company/pendaftaranService";
 
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +20,7 @@ import SectionAIdentitas from "./components/step2-sections/SectionAIdentitas";
 import SectionBContact from "./components/step2-sections/SectionBContact";
 import SectionCBadanUsaha from "./components/step2-sections/SectionCBadanUsaha";
 import SectionDInformasiLainnya from "./components/step2-sections/SectionDInformasiLainnya";
-import Step2Form from "./components/step2-sections/Step2Form";
+
 import Step3Review from "./components/Step3Review";
 import SubmissionModal from "@/src/components/company/SubmissionModal";
 
@@ -77,7 +78,7 @@ export default function NcageRegistrationView() {
         } = await supabase.auth.getUser();
 
         if (user) {
-          const { data, error } = await supabase
+          const { data, error: _error } = await supabase
             .from("ncage_applications")
             .select(
               `
@@ -363,7 +364,7 @@ export default function NcageRegistrationView() {
               : "Permohonan NCAGE Anda yang telah diperbaiki berhasil dikirim ulang dan sedang dalam proses verifikasi.",
             related_application_id: existingAppId,
           });
-        } catch (_) {}
+        } catch { /* notification insert is non-critical */ }
 
         const { error: identityError } = await supabase
           .from("application_identities")
@@ -466,7 +467,7 @@ export default function NcageRegistrationView() {
               "Permohonan NCAGE Anda telah berhasil dikirim dan sedang dalam proses verifikasi oleh tim Puskod Kemhan.",
             related_application_id: appData.id,
           });
-        } catch (_) {}
+        } catch { /* notification insert is non-critical */ }
 
         const { error: identityError } = await supabase
           .from("application_identities")
