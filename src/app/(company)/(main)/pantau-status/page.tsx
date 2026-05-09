@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DownloadCertificateButton } from "@/src/components/company/DownloadCertificateButton";
 
+// Selalu fetch data fresh — jangan cache halaman ini
+export const dynamic = "force-dynamic";
+
 const statusConfig: Record<
   number,
   { label: string; bgClass: string; textClass: string; icon: string }
@@ -161,6 +164,72 @@ export default async function PantauStatusPage() {
   const statusId = data.status_id ?? 1;
   const cfg = statusConfig[statusId] || statusConfig[1];
 
+  // ── Fetch NCAGE Record + H-30 Expiry Notification ──────────────
+  type NcageRecInfo = { expires_at: string; ncage_code: string | null } | null;
+  let ncageRecInfo: NcageRecInfo = null;
+  let ncageDaysLeft: number | null = null;
+
+  if (Number(statusId) === 4) {
+    const adminSupabase = createAdminClient();
+    const { data: ncageRec } = await adminSupabase
+      .from("ncage_records")
+      .select("expires_at, ncage_code")
+      .eq("ncage_application_id", data.id)
+      .maybeSingle();
+
+    if (ncageRec?.expires_at) {
+      ncageRecInfo = ncageRec;
+      const now = new Date();
+      const expiresAt = new Date(ncageRec.expires_at);
+      const daysLeft = Math.ceil(
+        (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      ncageDaysLeft = daysLeft;
+
+      // Kirim notifikasi jika H-30 atau sudah expired (daysLeft <= 30)
+      if (daysLeft <= 30) {
+        const thirtyDaysAgo = new Date(
+          now.getTime() - 30 * 24 * 60 * 60 * 1000,
+        ).toISOString();
+        const { data: existingNotif } = await adminSupabase
+          .from("notifications")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("type", "warning")
+          .ilike("title", "%kadaluarsa%")
+          .gte("created_at", thirtyDaysAgo)
+          .maybeSingle();
+
+        if (!existingNotif) {
+          const expiryDate = expiresAt.toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+          });
+
+          if (daysLeft > 0) {
+            await adminSupabase.from("notifications").insert({
+              user_id: user.id,
+              type: "warning",
+              title: `Kode NCAGE Akan Segera Kadaluarsa`,
+              description: `Kode NCAGE ${ncageRec.ncage_code ?? ""} Anda akan kadaluarsa pada ${expiryDate} (${daysLeft} hari lagi). Segera perbarui dokumen Anda melalui halaman Pendaftaran NCAGE.`,
+              related_application_id: data.id,
+            });
+          } else {
+            await adminSupabase.from("notifications").insert({
+              user_id: user.id,
+              type: "warning",
+              title: `Kode NCAGE Telah Kadaluarsa`,
+              description: `Kode NCAGE ${ncageRec.ncage_code ?? ""} Anda telah kadaluarsa pada ${expiryDate}. Segera ajukan pembaruan dokumen melalui halaman Pendaftaran NCAGE.`,
+              related_application_id: data.id,
+            });
+          }
+        }
+      }
+    }
+  }
+  // ─────────────────────────────────────────────────────────────
+
   return (
     <div className="max-w-4xl mx-auto p-6 md:p-10">
       <h1 className="text-2xl md:text-3xl font-semibold text-gray-800 tracking-tight mb-8">
@@ -249,6 +318,61 @@ export default async function PantauStatusPage() {
               </span>
             </div>
           </div>
+
+          {/* NCAGE code, expiry status, tanggal kadaluarsa — hanya muncul saat status 4 */}
+          {Number(statusId) === 4 && ncageRecInfo && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-[200px_auto_1fr] gap-2 md:gap-4 items-start md:items-center py-5">
+                <span className="text-gray-500 font-medium text-[15px]">Kode NCAGE</span>
+                <span className="hidden md:block text-gray-300">:</span>
+                <span className="font-bold tracking-widest font-mono text-[15px] text-gray-800">
+                  {ncageRecInfo.ncage_code ?? data.ncage_code ?? "-"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-[200px_auto_1fr] gap-2 md:gap-4 items-start md:items-center py-5">
+                <span className="text-gray-500 font-medium text-[15px]">Status Keaktifan</span>
+                <span className="hidden md:block text-gray-300">:</span>
+                <div className="flex items-center gap-3">
+                  {ncageDaysLeft !== null && ncageDaysLeft > 0 ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold bg-emerald-100 text-emerald-700">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Aktif
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold bg-red-100 text-red-700">
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                      Kadaluarsa
+                    </span>
+                  )}
+                  {ncageDaysLeft !== null && ncageDaysLeft > 0 && ncageDaysLeft <= 30 && (
+                    <span className="text-amber-600 text-[12px] font-medium">
+                      <i className="ri-alarm-warning-line mr-1" />
+                      {ncageDaysLeft} hari lagi
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-[200px_auto_1fr] gap-2 md:gap-4 items-start md:items-center py-5">
+                <span className="text-gray-500 font-medium text-[15px]">Tanggal Kadaluarsa</span>
+                <span className="hidden md:block text-gray-300">:</span>
+                <span className={`font-semibold text-[15px] ${
+                  ncageDaysLeft !== null && ncageDaysLeft <= 0
+                    ? "text-red-600"
+                    : ncageDaysLeft !== null && ncageDaysLeft <= 30
+                      ? "text-amber-600"
+                      : "text-gray-800"
+                }`}>
+                  {new Date(ncageRecInfo.expires_at).toLocaleDateString("id-ID", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+            </>
+          )}
 
           {statusId === 3 && (
             <div className="grid grid-cols-1 md:grid-cols-[200px_auto_1fr] gap-2 md:gap-4 items-start pt-5 pb-2 last:pb-0">

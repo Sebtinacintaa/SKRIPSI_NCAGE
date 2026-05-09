@@ -149,33 +149,72 @@ export async function updateStatusPermohonan(
         ? appMeta.application_identities[0]
         : appMeta.application_identities;
 
-      const { error: insertError } = await supabase
+      // Cek apakah record sudah ada (kasus renewal — ncage_code tetap sama)
+      const { data: existingRecord } = await supabase
         .from("ncage_records")
-        .insert({
-          ncage_application_id: applicationId,
-          ncage_code: ncageCode || appMeta.ncage_code,
-          entity_name: company?.name || "-",
-          street: company?.street || "-",
-          city: company?.city || "-",
-          stt: company?.province || "-",
-          psc: company?.postal_code || "-",
-          tel: company?.phone || "-",
-          ema: company?.email || "-",
-          www: company?.website || "-",
-          toec: identity?.entity_type || "-",
-          domestic_certificate_path:
-            updatePayload.domestic_certificate_path || null,
-          ncagesd: "A",
-          issued_at: new Date().toISOString(),
-        });
+        .select("id")
+        .eq("ncage_application_id", applicationId)
+        .maybeSingle();
 
-      if (insertError) {
-        console.error("Gagal insert ke ncage_records:", insertError.message);
-        return {
-          success: false,
-          message: "Gagal menyimpan ke ncage_records: " + insertError.message,
-        };
+      if (existingRecord) {
+        // UPDATE — hanya update dokumen, tanggal terbit, dan data perusahaan
+        // ncage_code TIDAK diubah agar selalu sama
+        const { error: updateError } = await supabase
+          .from("ncage_records")
+          .update({
+            entity_name: company?.name || "-",
+            street: company?.street || "-",
+            city: company?.city || "-",
+            stt: company?.province || "-",
+            psc: company?.postal_code || "-",
+            tel: company?.phone || "-",
+            ema: company?.email || "-",
+            www: company?.website || "-",
+            toec: identity?.entity_type || "-",
+            domestic_certificate_path:
+              updatePayload.domestic_certificate_path || null,
+            issued_at: new Date().toISOString(),
+          })
+          .eq("ncage_application_id", applicationId);
+
+        if (updateError) {
+          console.error("Gagal update ncage_records:", updateError.message);
+          return {
+            success: false,
+            message: "Gagal memperbarui ncage_records: " + updateError.message,
+          };
+        }
+      } else {
+        // INSERT — pendaftaran pertama kali
+        const { error: insertError } = await supabase
+          .from("ncage_records")
+          .insert({
+            ncage_application_id: applicationId,
+            ncage_code: ncageCode || appMeta.ncage_code,
+            entity_name: company?.name || "-",
+            street: company?.street || "-",
+            city: company?.city || "-",
+            stt: company?.province || "-",
+            psc: company?.postal_code || "-",
+            tel: company?.phone || "-",
+            ema: company?.email || "-",
+            www: company?.website || "-",
+            toec: identity?.entity_type || "-",
+            domestic_certificate_path:
+              updatePayload.domestic_certificate_path || null,
+            ncagesd: "A",
+            issued_at: new Date().toISOString(),
+          });
+
+        if (insertError) {
+          console.error("Gagal insert ke ncage_records:", insertError.message);
+          return {
+            success: false,
+            message: "Gagal menyimpan ke ncage_records: " + insertError.message,
+          };
+        }
       }
+
     }
 
     await createNotification({

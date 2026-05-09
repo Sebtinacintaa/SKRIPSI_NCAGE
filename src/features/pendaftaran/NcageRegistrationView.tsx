@@ -5,7 +5,7 @@ import Stepper, { StepItem } from "@/src/components/ui/Stepper";
 
 import { useRouter } from "next/navigation";
 import { createClient } from "@/src/utils/supabase/client";
-import { createAdminClient } from "@/src/utils/supabase/admin";
+import { checkNcageExpiry } from "./actions";
 
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -55,6 +55,8 @@ export default function NcageRegistrationView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [existingAppId, setExistingAppId] = useState<string | null>(null);
+  const [isNearExpiry, setIsNearExpiry] = useState(false);
+  const [expiryInfo, setExpiryInfo] = useState<{ daysLeft: number; date: string } | null>(null);
 
   const methods = useForm<NcageRegistrationFormValues>({
     resolver: zodResolver(ncageRegistrationSchema),
@@ -94,7 +96,27 @@ export default function NcageRegistrationView() {
             .maybeSingle();
 
           if (data) {
-            if (data.status_id !== 3) {
+            // Jika status = 4 (Sertifikat Diterbitkan), cek apakah H-30 sebelum kadaluarsa
+            if (data.status_id === 4) {
+              const result = await checkNcageExpiry(data.id);
+
+              if (result.found) {
+                const { daysLeft, expiryDateFormatted } = result;
+
+                if (daysLeft <= 30) {
+                  // H-30 atau sudah expired → izinkan akses untuk pengiriman ulang berkas
+                  setIsNearExpiry(true);
+                  setExpiryInfo({ daysLeft, date: expiryDateFormatted });
+                } else {
+                  // Masih aktif, lebih dari 30 hari → blok
+                  setModalState("already_registered");
+                  return;
+                }
+              } else {
+                setModalState("already_registered");
+                return;
+              }
+            } else if (data.status_id !== 3) {
               setModalState("already_registered");
               return;
             }
@@ -333,9 +355,12 @@ export default function NcageRegistrationView() {
           await adminSupabase.from("notifications").insert({
             user_id: user.id,
             type: "info",
-            title: "Perbaikan Permohonan Berhasil Dikirim",
-            description:
-              "Permohonan NCAGE Anda yang telah diperbaiki berhasil dikirim ulang dan sedang dalam proses verifikasi.",
+            title: isNearExpiry
+              ? "Pembaruan Dokumen NCAGE Berhasil Dikirim"
+              : "Perbaikan Permohonan Berhasil Dikirim",
+            description: isNearExpiry
+              ? "Dokumen pembaruan NCAGE Anda telah berhasil dikirim dan sedang dalam proses verifikasi sebelum masa berlaku habis."
+              : "Permohonan NCAGE Anda yang telah diperbaiki berhasil dikirim ulang dan sedang dalam proses verifikasi.",
             related_application_id: existingAppId,
           });
         } catch (_) {}
@@ -564,6 +589,45 @@ export default function NcageRegistrationView() {
           </div>
         </div>
       )}
+      {isNearExpiry && expiryInfo && (
+        <div className={`mx-6 mt-6 flex items-start gap-3 p-4 rounded-xl border ${
+          expiryInfo.daysLeft <= 0
+            ? "bg-red-50 border-red-200"
+            : "bg-amber-50 border-amber-200"
+        }`}>
+          <i className={`text-xl mt-0.5 shrink-0 ${
+            expiryInfo.daysLeft <= 0
+              ? "ri-error-warning-line text-red-500"
+              : "ri-alarm-warning-line text-amber-500"
+          }`} />
+          <div>
+            <p className={`font-semibold text-[14px] ${
+              expiryInfo.daysLeft <= 0 ? "text-red-800" : "text-amber-800"
+            }`}>
+              {expiryInfo.daysLeft <= 0
+                ? "Kode NCAGE Telah Kadaluarsa"
+                : `Masa Berlaku NCAGE Akan Habis dalam ${expiryInfo.daysLeft} Hari`}
+            </p>
+            <p className={`text-[13px] mt-0.5 leading-relaxed ${
+              expiryInfo.daysLeft <= 0 ? "text-red-700" : "text-amber-700"
+            }`}>
+              {expiryInfo.daysLeft <= 0
+                ? <>
+                    Kode NCAGE Anda telah kadaluarsa pada <strong>{expiryInfo.date}</strong>.
+                    Kirimkan kembali dokumen terbaru Anda di bawah ini untuk proses perpanjangan.
+                    Data lama Anda sudah terisi otomatis.
+                  </>
+                : <>
+                    Kode NCAGE Anda akan kadaluarsa pada <strong>{expiryInfo.date}</strong>.
+                    Perbarui dokumen Anda di bawah ini agar proses perpanjangan dapat segera diproses.
+                    Dokumen lama Anda sudah terisi otomatis.
+                  </>
+              }
+            </p>
+          </div>
+        </div>
+      )}
+
       <Stepper currentStep={getVisualStep(currentStep)} steps={NCAGE_STEPS} />
 
       <div className="p-6 md:p-10 bg-white">
