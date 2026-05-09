@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "../../../utils/supabase/server";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export async function adminLogin(
@@ -40,6 +41,16 @@ export async function adminLogin(
     await supabase.auth.signOut();
     return { error: "Akun ini tidak memiliki akses admin" };
   }
+
+  // Set 1-hour session cookie
+  const cookieStore = await cookies();
+  cookieStore.set("ncage_login_time", Date.now().toString(), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 3600,
+    path: "/",
+  });
 
   redirect("/admin/dashboard");
   return null;

@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "../../../utils/supabase/server";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export async function register(formData: FormData) {
@@ -70,6 +71,17 @@ export async function login(
     return { error: "Email atau kata sandi salah" };
   }
 
+  // Set 1-hour session cookie
+  const cookieStore = await cookies();
+  cookieStore.set("ncage_login_time", Date.now().toString(), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 3600,
+    path: "/",
+  });
+
   redirect("/beranda");
   return null;
 }
+

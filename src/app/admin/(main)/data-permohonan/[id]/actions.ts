@@ -5,13 +5,30 @@ import { revalidatePath } from "next/cache";
 import { generateCertificate } from "@/src/utils/certificate";
 import { createNotification } from "@/src/lib/notifications";
 
-function generateRandomNCAGE(): string {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let ncage = "";
-  for (let i = 0; i < 5; i++) {
-    ncage += chars.charAt(Math.floor(Math.random() * chars.length));
+async function generateSequentialNCAGE(
+  supabase: ReturnType<typeof createAdminClient>,
+): Promise<string> {
+  // Ambil semua kode NCAGE yang sudah ada dan cocok dengan format XXXXZ
+  const { data, error } = await supabase
+    .from("ncage_records")
+    .select("ncage_code")
+    .like("ncage_code", "____Z");
+
+  let maxNumber = 0;
+
+  if (!error && data && data.length > 0) {
+    for (const record of data) {
+      const code = record.ncage_code as string | null;
+      if (code && /^\d{4}Z$/.test(code)) {
+        const num = parseInt(code.substring(0, 4), 10);
+        if (num > maxNumber) maxNumber = num;
+      }
+    }
   }
-  return ncage;
+
+  const nextNumber = maxNumber + 1;
+  const padded = String(nextNumber).padStart(4, "0");
+  return `${padded}Z`;
 }
 
 export async function updateStatusPermohonan(
@@ -60,7 +77,8 @@ export async function updateStatusPermohonan(
       ? appData.company_details[0]
       : appData.company_details;
 
-    const ncageCode = appData.ncage_code || generateRandomNCAGE();
+    // Gunakan kode yang sudah ada (kasus renewal) atau generate kode baru (pendaftaran pertama)
+    const ncageCode = appData.ncage_code || (await generateSequentialNCAGE(supabase));
     updatePayload.ncage_code = ncageCode;
 
     try {
