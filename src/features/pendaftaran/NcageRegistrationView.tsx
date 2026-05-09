@@ -5,7 +5,7 @@ import Stepper, { StepItem } from "@/src/components/ui/Stepper";
 
 import { useRouter } from "next/navigation";
 import { createClient } from "@/src/utils/supabase/client";
-import { checkNcageExpiry } from "./actions";
+import { checkNcageExpiry, generateApplicationNumber } from "./actions";
 
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -438,12 +438,16 @@ export default function NcageRegistrationView() {
         if (otherError)
           throw new Error(`[other_informations] ${otherError.message}`);
       } else {
+        // Generate nomor permohonan dengan format NCG+DDMMYYYY+urutan
+        const applicationNumber = await generateApplicationNumber();
+
         const { data: appData, error: appError } = await supabase
           .from("ncage_applications")
           .insert({
             user_id: user.id,
             status_id: STATUS_PERMOHONAN_DIKIRIM,
             documents: uploadedPaths,
+            application_number: applicationNumber,
           })
           .select("id")
           .single();

@@ -175,20 +175,10 @@ export async function updateStatusPermohonan(
         .maybeSingle();
 
       if (existingRecord) {
-        // UPDATE — hanya update dokumen, tanggal terbit, dan data perusahaan
-        // ncage_code TIDAK diubah agar selalu sama
+        // UPDATE — only update certificate path and issued_at
         const { error: updateError } = await supabase
           .from("ncage_records")
           .update({
-            entity_name: company?.name || "-",
-            street: company?.street || "-",
-            city: company?.city || "-",
-            stt: company?.province || "-",
-            psc: company?.postal_code || "-",
-            tel: company?.phone || "-",
-            ema: company?.email || "-",
-            www: company?.website || "-",
-            toec: identity?.entity_type || "-",
             domestic_certificate_path:
               updatePayload.domestic_certificate_path || null,
             issued_at: new Date().toISOString(),
@@ -203,24 +193,15 @@ export async function updateStatusPermohonan(
           };
         }
       } else {
-        // INSERT — pendaftaran pertama kali
+        // INSERT — first-time registration
         const { error: insertError } = await supabase
           .from("ncage_records")
           .insert({
             ncage_application_id: applicationId,
             ncage_code: ncageCode || appMeta.ncage_code,
-            entity_name: company?.name || "-",
-            street: company?.street || "-",
-            city: company?.city || "-",
-            stt: company?.province || "-",
-            psc: company?.postal_code || "-",
-            tel: company?.phone || "-",
-            ema: company?.email || "-",
-            www: company?.website || "-",
-            toec: identity?.entity_type || "-",
+            ncagesd: "A",
             domestic_certificate_path:
               updatePayload.domestic_certificate_path || null,
-            ncagesd: "A",
             issued_at: new Date().toISOString(),
           });
 

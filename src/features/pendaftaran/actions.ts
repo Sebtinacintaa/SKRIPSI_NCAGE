@@ -39,3 +39,38 @@ export async function checkNcageExpiry(
 
   return { found: true, daysLeft, expiryDateFormatted };
 }
+
+/**
+ * Generate nomor permohonan dengan format: NCG + DDMMYYYY + urutan harian
+ * Contoh: NCG100520261 (permohonan pertama pada tanggal 10 Mei 2026)
+ */
+export async function generateApplicationNumber(): Promise<string> {
+  const adminSupabase = createAdminClient();
+  const now = new Date();
+
+  const dd = String(now.getDate()).padStart(2, "0");
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const yyyy = String(now.getFullYear());
+  const dateStr = `${dd}${mm}${yyyy}`; // DDMMYYYY
+
+  // Hitung berapa permohonan yang sudah ada hari ini
+  const startOfDay = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ).toISOString();
+  const endOfDay = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1,
+  ).toISOString();
+
+  const { count } = await adminSupabase
+    .from("ncage_applications")
+    .select("*", { count: "exact", head: true })
+    .gte("created_at", startOfDay)
+    .lt("created_at", endOfDay);
+
+  const seq = (count ?? 0) + 1;
+  return `NCG${dateStr}${seq}`;
+}

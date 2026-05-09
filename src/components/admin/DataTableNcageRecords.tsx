@@ -48,6 +48,19 @@ export function DataTableNcageRecords({ data }: DataTableNcageRecordsProps) {
     [],
   );
   const [globalFilter, setGlobalFilter] = React.useState("");
+  const [showExportMenu, setShowExportMenu] = React.useState(false);
+  const exportRef = React.useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const columns: ColumnDef<NcageRecord>[] = [
     {
@@ -231,6 +244,50 @@ export function DataTableNcageRecords({ data }: DataTableNcageRecordsProps) {
     initialState: { pagination: { pageSize: 8 } },
   });
 
+  const handleExportCSV = () => {
+    const rows = table.getFilteredRowModel().rows;
+    const headers = [
+      "No.",
+      "Kode NCAGE",
+      "Nama Perusahaan",
+      "Tipe Entitas",
+      "Status Kode",
+      "Tanggal Terbit",
+      "Tanggal Kadaluarsa",
+      "ID Permohonan",
+    ];
+    const escape = (v: string) => `"${String(v ?? "-").replace(/"/g, '""')}"`;
+    const csvRows = [
+      headers.join(","),
+      ...rows.map((row, i) => {
+        const d = row.original;
+        return [
+          i + 1,
+          d.kode_ncage,
+          escape(d.nama_perusahaan),
+          escape(d.tipe_entitas),
+          d.status_kode,
+          d.tanggal_terbit,
+          d.tanggal_kadaluarsa,
+          d.permohonan_id,
+        ].join(",");
+      }),
+    ];
+    // UTF-8 BOM agar Excel bisa baca karakter Indonesia
+    const blob = new Blob(["\uFEFF" + csvRows.join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `NCAGE_Records_${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setShowExportMenu(false);
+  };
+
   return (
     <div className="flex flex-col gap-5 mt-6">
       <div className="flex items-center justify-between gap-4">
@@ -250,23 +307,58 @@ export function DataTableNcageRecords({ data }: DataTableNcageRecordsProps) {
           />
         </div>
 
-        <select
-          onChange={(e) =>
-            table
-              .getColumn("status_kode")
-              ?.setFilterValue(e.target.value || undefined)
-          }
-          className="
-            px-4 py-2.5 text-[13px] font-medium border border-gray-200/50 rounded-[10px]
-            bg-white text-gray-600 focus:outline-none
-            focus:ring-4 focus:ring-[#8B1E1E]/5 focus:border-[#8B1E1E]/40
-            transition-all cursor-pointer
-          "
-        >
-          <option value="">Semua Status</option>
-          <option value="Aktif">Aktif</option>
-          <option value="Tidak Aktif">Tidak Aktif</option>
-        </select>
+        {/* Right side: filter + export */}
+        <div className="flex items-center gap-2">
+          <select
+            onChange={(e) =>
+              table
+                .getColumn("status_kode")
+                ?.setFilterValue(e.target.value || undefined)
+            }
+            className="
+              px-4 py-2.5 text-[13px] font-medium border border-gray-200/50 rounded-[10px]
+              bg-white text-gray-600 focus:outline-none
+              focus:ring-4 focus:ring-[#8B1E1E]/5 focus:border-[#8B1E1E]/40
+              transition-all cursor-pointer
+            "
+          >
+            <option value="">Semua Status</option>
+            <option value="Aktif">Aktif</option>
+            <option value="Tidak Aktif">Tidak Aktif</option>
+          </select>
+
+          {/* Export dropdown */}
+          <div ref={exportRef} className="relative">
+            <button
+              onClick={() => setShowExportMenu((v) => !v)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-[10px] bg-[#5D3A3A] hover:bg-[#4a2e2e] text-white text-[13px] font-semibold transition-all active:scale-95 shadow-sm shadow-[#5D3A3A]/20"
+            >
+              <i className="ri-download-2-line text-base" />
+              Ekspor
+              <i className={`ri-arrow-down-s-line text-base transition-transform ${showExportMenu ? "rotate-180" : ""}`} />
+            </button>
+
+            {showExportMenu && (
+              <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-48 bg-white border border-gray-100/60 rounded-[12px] shadow-xl shadow-gray-200/60 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                <div className="px-3 py-2 border-b border-gray-100/60">
+                  <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Format Ekspor</p>
+                </div>
+                <button
+                  onClick={handleExportCSV}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <span className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
+                    <i className="ri-file-excel-2-line text-emerald-600" />
+                  </span>
+                  <div>
+                    <p className="font-semibold text-gray-800">CSV / Excel</p>
+                    <p className="text-[11px] text-gray-400">{table.getFilteredRowModel().rows.length} baris</p>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="rounded-[15px] border border-gray-100/40 overflow-hidden bg-white shadow-sm shadow-gray-100/40">

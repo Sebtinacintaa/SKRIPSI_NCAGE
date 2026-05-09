@@ -9,9 +9,7 @@ async function getPermohonanList(): Promise<PermohonanRow[]> {
     .from("ncage_applications")
     .select(
       `
-      id,
-      created_at,
-      status_id,
+      *,
       statuses ( name ),
       application_contacts ( name ),
       company_details ( name )
@@ -35,6 +33,7 @@ async function getPermohonanList(): Promise<PermohonanRow[]> {
 
     return {
       id: row.id,
+      application_number: (row as any).application_number ?? null,
       created_at: row.created_at ?? "",
       status_id: row.status_id ?? 1,
       status_name: status?.name ?? "Permohonan Dikirim",

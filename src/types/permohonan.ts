@@ -6,6 +6,7 @@ export interface StatusInfo {
 
 export interface PermohonanRow {
   id: string;
+  application_number: string | null;
   created_at: string;
   status_id: number;
   status_name: string;
@@ -15,6 +16,7 @@ export interface PermohonanRow {
 
 export interface PermohonanDetail {
   id: string;
+  application_number: string | null;
   created_at: string;
   status_id: number;
   status_name: string;

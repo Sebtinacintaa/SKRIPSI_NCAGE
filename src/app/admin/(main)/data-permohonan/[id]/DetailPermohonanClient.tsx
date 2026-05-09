@@ -177,7 +177,23 @@ function ConfirmModal({
   );
 }
 
-export function DetailPermohonanClient({ data }: { data: PermohonanDetail }) {
+interface NcageInfo {
+  code: string;
+  issued_at: string | null;
+  expires_at: string | null;
+}
+
+export function DetailPermohonanClient({
+  data,
+  backUrl = "/admin/data-permohonan",
+  backLabel = "Data Permohonan",
+  ncageInfo,
+}: {
+  data: PermohonanDetail;
+  backUrl?: string;
+  backLabel?: string;
+  ncageInfo?: NcageInfo;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [activeModal, setActiveModal] = useState<
@@ -229,10 +245,10 @@ export function DetailPermohonanClient({ data }: { data: PermohonanDetail }) {
         <div>
           <div className="flex items-center gap-1.5 text-[12px] text-gray-400 mb-2">
             <Link
-              href="/admin/data-permohonan"
+              href={backUrl}
               className="hover:text-[#8B1E1E] transition-colors"
             >
-              Data Permohonan
+              {backLabel}
             </Link>
             <i className="ri-arrow-right-s-line" />
             <span className="text-gray-600 font-medium truncate max-w-[220px]">
@@ -245,7 +261,7 @@ export function DetailPermohonanClient({ data }: { data: PermohonanDetail }) {
         </div>
 
         <div className="flex items-center justify-between gap-3 mt-5">
-          {!isFinal && (
+          {!ncageInfo && !isFinal && (
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setActiveModal("tolak")}
@@ -275,7 +291,7 @@ export function DetailPermohonanClient({ data }: { data: PermohonanDetail }) {
           )}
 
           <button
-            onClick={() => router.push("/admin/data-permohonan")}
+            onClick={() => router.push(backUrl)}
             className="flex ml-auto items-center gap-2 px-4 py-2.5 rounded-[15px] bg-[#8B1E1E] text-white text-[13px] font-semibold hover:bg-[#6e1818] active:scale-95 transition-all shadow-sm shadow-[#8B1E1E]/20"
           >
             <i className="ri-arrow-left-line" />
@@ -283,6 +299,45 @@ export function DetailPermohonanClient({ data }: { data: PermohonanDetail }) {
           </button>
         </div>
       </div>
+
+      {/* NCAGE Record info — only shown when viewing from ncage-records */}
+      {ncageInfo && (
+        <SectionCard title="Kode NCAGE Diterbitkan">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-8 gap-y-5">
+            <div className="flex flex-col gap-1">
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Kode NCAGE</p>
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-[13px] font-bold w-fit tracking-widest border border-emerald-100">
+                <i className="ri-shield-check-line" />
+                {ncageInfo.code || "—"}
+              </span>
+            </div>
+            <Field
+              label="Tanggal Terbit"
+              value={
+                ncageInfo.issued_at
+                  ? new Date(ncageInfo.issued_at).toLocaleDateString("id-ID", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    })
+                  : null
+              }
+            />
+            <Field
+              label="Tanggal Kadaluarsa"
+              value={
+                ncageInfo.expires_at
+                  ? new Date(ncageInfo.expires_at).toLocaleDateString("id-ID", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    })
+                  : null
+              }
+            />
+          </div>
+        </SectionCard>
+      )}
 
       <SectionCard title="Status Permohonan">
         <div className="grid grid-cols-2 gap-x-8 gap-y-5">

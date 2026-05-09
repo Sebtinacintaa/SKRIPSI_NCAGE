@@ -16,8 +16,6 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
   type ChartConfig,
 } from "@/src/components/ui/chart";
 
@@ -159,9 +157,7 @@ function IndonesiaMap({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<GeoTooltip | null>(null);
-  const [geoData, setGeoData] = useState<any | null>(
-    null,
-  );
+  const [geoData, setGeoData] = useState<any | null>(null);
 
   useEffect(() => {
     fetch(GEO_URL)
@@ -384,7 +380,8 @@ export default function DashboardClient({ data }: Props) {
           Dashboard Admin
         </h1>
         <p className="text-[14px] text-gray-500 mt-2 font-normal leading-relaxed">
-          Selamat datang kembali! Kelola data permohonan dan pendaftaran NCAGE secara real-time.
+          Selamat datang kembali! Kelola data permohonan dan pendaftaran NCAGE
+          secara real-time.
         </p>
       </div>
 
@@ -474,7 +471,10 @@ export default function DashboardClient({ data }: Props) {
           <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-5 border-t border-gray-100/40 pt-4">
             {data.statusDistribution.map((entry, i) => (
               <div key={i} className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: entry.color }}
+                />
                 <span className="text-[11px] font-medium text-gray-500 leading-tight">
                   {entry.name}
                 </span>

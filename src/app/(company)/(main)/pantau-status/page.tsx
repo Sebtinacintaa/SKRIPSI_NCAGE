@@ -58,13 +58,7 @@ export default async function PantauStatusPage() {
     .from("ncage_applications")
     .select(
       `
-      id,
-      created_at,
-      updated_at,
-      status_id,
-      revision_notes,
-      ncage_code,
-      domestic_certificate_path,
+      *,
       statuses ( name ),
       application_identities (
         application_type,
@@ -240,12 +234,18 @@ export default async function PantauStatusPage() {
         <div className="flex flex-col divide-y divide-gray-100/60">
           <div className="grid grid-cols-1 md:grid-cols-[200px_auto_1fr] gap-2 md:gap-4 items-start md:items-center py-5 first:pt-0">
             <span className="text-gray-500 font-medium text-[15px]">
-              ID Permohonan
+              {(data as any).application_number ? "No. Permohonan" : "ID Permohonan"}
             </span>
             <span className="hidden md:block text-gray-300">:</span>
-            <span className="text-gray-800 font-semibold text-[15px]">
-              {data.id}
-            </span>
+            {(data as any).application_number ? (
+              <span className="font-bold tracking-widest font-mono text-[15px] text-[#8C1E1E]">
+                {(data as any).application_number}
+              </span>
+            ) : (
+              <span className="text-gray-500 font-mono text-[13px] break-all">
+                {data.id}
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-[200px_auto_1fr] gap-2 md:gap-4 items-start md:items-center py-5">

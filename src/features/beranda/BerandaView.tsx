@@ -15,7 +15,8 @@ export default function BerandaView() {
       <section
         className="relative w-full overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, #FAF8F5 0%, #EEE4E2 50%, #D697A0 100%)",
+          background:
+            "linear-gradient(135deg, #FAF8F5 0%, #EEE4E2 50%, #D697A0 100%)",
         }}
       >
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-stretch min-h-[500px]">
@@ -30,11 +31,15 @@ export default function BerandaView() {
             </h2>
 
             <p className="text-gray-600 mt-5 max-w-md text-lg leading-relaxed">
-              Solusi digital untuk pengajuan kode NCAGE secara cepat, aman, dan terintegrasi dalam satu sistem.
+              Solusi digital untuk pengajuan kode NCAGE secara cepat, aman, dan
+              terintegrasi dalam satu sistem.
             </p>
 
             <div>
-              <Link href="/register" className="inline-block mt-10 bg-[#5D3A3A] text-white px-12 py-3.5 rounded-xl shadow hover:bg-[#4A2D2D] transition-all duration-300 ease-out hover:scale-[1.03] active:scale-[0.98] hover:shadow-lg hover:shadow-[#5D3A3A]/20 text-lg font-semibold">
+              <Link
+                href="/pendaftaran-ncage"
+                className="inline-block mt-10 bg-[#5D3A3A] text-white px-12 py-3.5 rounded-xl shadow hover:bg-[#4A2D2D] transition-all duration-300 ease-out hover:scale-[1.03] active:scale-[0.98] hover:shadow-lg hover:shadow-[#5D3A3A]/20 text-lg font-semibold"
+              >
                 Mulai Pendaftaran
               </Link>
             </div>
@@ -59,7 +64,6 @@ export default function BerandaView() {
       {/* TAHAPAN ALUR SECTION */}
       <section className="py-24 bg-white relative">
         <div className="max-w-7xl mx-auto px-8 relative z-10">
-          
           {/* SECTION TITLE */}
           <div className="flex flex-col items-center mb-16 text-center">
             <div className="inline-block relative">

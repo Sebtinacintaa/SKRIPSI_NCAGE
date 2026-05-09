@@ -43,6 +43,9 @@ export async function register(formData: FormData) {
     if (insertError) {
       console.error("Error insert ke tabel users:", insertError);
     }
+
+    // Sign out immediately — user harus login manual
+    await supabase.auth.signOut();
   }
 
   redirect("/login?registered=true");
@@ -84,4 +87,3 @@ export async function login(
   redirect("/beranda");
   return null;
 }
-

@@ -94,6 +94,21 @@ export function DataTablePermohonan({ data }: DataTablePermohonanProps) {
     },
 
     {
+      accessorKey: "application_number",
+      header: "No. Permohonan",
+      cell: ({ row }) => {
+        const num = row.getValue("application_number") as string | null;
+        return num ? (
+          <span className="font-bold tracking-wider font-mono text-[12px] text-[#8B1E1E]">
+            {num}
+          </span>
+        ) : (
+          <span className="text-gray-300 text-[12px] italic">—</span>
+        );
+      },
+    },
+
+    {
       accessorKey: "nama_pemohon",
       header: ({ column }) => (
         <button
