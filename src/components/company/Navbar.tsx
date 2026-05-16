@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/src/utils/supabase/client";
@@ -30,9 +30,10 @@ const Navbar = () => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
 
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -47,9 +48,9 @@ const Navbar = () => {
         setUserData({ name: data.name, company: data.company_name });
       }
     }
-  };
+  }, [supabase]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
 
@@ -76,7 +77,7 @@ const Navbar = () => {
         }))
       );
     }
-  };
+  }, [supabase]);
 
   useEffect(() => {
     if (!isBeranda) return;
@@ -117,7 +118,7 @@ const Navbar = () => {
       subscription.unsubscribe();
       window.removeEventListener("profileUpdated", fetchUserData);
     };
-  }, [supabase]);
+  }, [supabase, fetchUserData, fetchNotifications]);
 
   const getInitials = (name: string) => {
     if (!name) return "??";
@@ -151,22 +152,23 @@ const Navbar = () => {
     await supabase.from("notifications").update({ is_read: true }).eq("user_id", session.user.id);
   };
 
+
+
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center">
+    <header className="fixed top-0 left-0 w-full z-[100]">
       <nav
-        className={`w-full flex items-center justify-between px-6 md:px-12 ${
+        className={`w-full transition-all duration-300 ${
           isBeranda
-            ? `transition-all duration-500 ease-in-out bg-white/90 backdrop-blur-md py-5 ${
-                scrolled
-                  ? "max-w-[98%] rounded-2xl border border-gray-200 shadow-lg mt-1"
-                  : "max-w-full rounded-none border-b border-gray-200 shadow-sm"
-              }`
-            : "bg-white border-b border-gray-200 shadow-sm py-4"
+            ? scrolled
+              ? "bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-md py-4 lg:py-5"
+              : "bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm py-5 lg:py-6"
+            : "bg-white border-b border-gray-200 shadow-sm py-4 lg:py-5"
         }`}
       >
-        <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto w-full flex items-center justify-between px-6 lg:px-8">
+          <div className="flex items-center gap-3">
           <Image
             src="/logo-kemhan.png"
             alt="Logo Kemhan"
@@ -182,7 +184,16 @@ const Navbar = () => {
           </div>
         </div>
 
-        <ul className="hidden md:flex items-center gap-8">
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl transition-all hover:bg-gray-100"
+        >
+          <i
+            className={`text-2xl text-gray-700 transition-all ${mobileMenuOpen ? "ri-close-line rotate-90" : "ri-menu-line"}`}
+          ></i>
+        </button>
+
+        <ul className="hidden lg:flex items-center gap-8">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -203,7 +214,7 @@ const Navbar = () => {
         </ul>
 
         {!isLoggedIn ? (
-          <div className="flex items-center gap-5">
+          <div className="hidden lg:flex items-center gap-5">
             <Link
               href="/login"
               className="px-6 py-2.5 rounded-full border border-gray-300 text-sm font-medium text-black hover:bg-gray-50 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-sm"
@@ -218,7 +229,7 @@ const Navbar = () => {
             </Link>
           </div>
         ) : (
-          <div className="flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-4">
             <div className="relative">
               <button
                 onClick={() => {
@@ -339,14 +350,87 @@ const Navbar = () => {
             </div>
           </div>
         )}
+        </div>
       </nav>
+
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="lg:hidden absolute top-full left-0 w-full bg-white border-b border-gray-200 shadow-lg overflow-hidden"
+          >
+            <div className="px-6 py-4 space-y-2">
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block w-full text-left px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                      isActive
+                        ? "bg-[#FDECEC] text-[#8B1E1E] font-semibold"
+                        : "text-[#374151] hover:bg-gray-50 hover:text-[#8B1E1E]"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {!isLoggedIn ? (
+              <div className="px-6 py-4 border-t border-gray-100 flex flex-col gap-3">
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-3 rounded-xl border border-gray-300 text-sm font-medium text-black text-center hover:bg-gray-50 transition-all"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-3 rounded-xl bg-[#5D3A3A] text-sm font-medium text-white text-center hover:bg-[#4A2D2D] transition-all"
+                >
+                  Daftar
+                </Link>
+              </div>
+            ) : (
+              <div className="px-6 py-4 border-t border-gray-100 space-y-2">
+                <Link
+                  href="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-600 hover:bg-gray-50 transition-all"
+                >
+                  <i className="ri-user-line text-lg text-gray-400"></i>
+                  <span className="font-semibold">Profil Saya</span>
+                </Link>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setIsLogoutModalOpen(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all"
+                >
+                  <i className="ri-logout-box-line text-lg text-gray-400"></i>
+                  <span className="font-semibold">Keluar Akun</span>
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <LogoutModal
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={handleLogout}
       />
-    </div>
+    </header>
   );
 };
 

@@ -34,12 +34,13 @@ export default function RootLayout({
       lang="en"
       className={cn(
         "antialiased",
+        "overflow-x-hidden",
         poppins.variable,
         "font-sans",
         geist.variable,
       )}
     >
-      <body className="font-sans overflow-x-hidden">{children}</body>
+      <body className="font-sans overflow-x-hidden w-full max-w-[100vw]">{children}</body>
     </html>
   );
 }
