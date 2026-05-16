@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { createClient } from "@/src/utils/supabase/client";
 
@@ -15,8 +15,14 @@ interface Notification {
 }
 
 export default function NotifikasiView() {
+  const supabase = useRef<ReturnType<typeof createClient> | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     const supabaseClient = createClient();
+    supabase.current = supabaseClient;
     let cancelled = false;
 
     async function load() {
@@ -68,12 +74,16 @@ export default function NotifikasiView() {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
     );
-    await supabase.from("notifications").update({ is_read: true }).eq("id", id);
+    if (supabase.current) {
+      await supabase.current.from("notifications").update({ is_read: true }).eq("id", id);
+    }
   };
 
   const deleteNotif = async (id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
-    await supabase.from("notifications").delete().eq("id", id);
+    if (supabase.current) {
+      await supabase.current.from("notifications").delete().eq("id", id);
+    }
   };
 
   const typeStyles = {
